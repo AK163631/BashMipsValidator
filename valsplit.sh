@@ -16,6 +16,7 @@
 # erronous instructions will be written to error file only in the validation loop same with vaild instructions
 # printing of error messages to stdout/terminal is done only in validatin loop
 
+
 ADD="add"
 SUB="sub"
 ADDI="addi"
@@ -25,14 +26,6 @@ instruction_file="$1" # first arg
 output_file="$2" # second arg
 error_file="$3" # third arg
 
-
-write_to_output_file(){
-  :
-}
-
-write_to_error_file(){
-  :
-}
 
 validate_instruction(){
   instruction=("$@") # array of instructions elements
@@ -92,7 +85,6 @@ validate_register(){
 
   if [ "${reg:0:1}" != \$ ]; then # checks for $ at start of register
     echo "Token not found \$ in $reg in $line on line $line_count"
-    # return
   fi
 
   local name="${reg:1:1}"
@@ -100,19 +92,16 @@ validate_register(){
 
     if [ "${reg:2}" -gt 9 ] || [ "${reg:2}" -lt 0 ]; then
       echo "Invalid temp register range, expected between 0,9 got ${reg:2} in $reg in $line on line $line_count"
-      # return
     fi
 
   elif [ "$name" == s ]; then
 
     if [ "${reg:2}" -gt 7 ] || [ "${reg:2}" -lt 0 ]; then
       echo "Invalid register range, expected between 0,7 got ${reg:2} in $reg in $line on line $line_count"
-      # return
     fi
 
   else
     echo "Invalid register name, expected t or s got $name in $reg in $line on line $line_count"
-    # return
   fi
 }
 
@@ -120,7 +109,6 @@ validate_imediate(){ # takes one value
   local value="$1"
   if [ "$value" -gt 32767 ] || [ "$value" -lt -32768 ]; then
     echo "Invalid immediate range, expected between -32768,32767 got $value in $line on line $line_count"
-    # return
   fi
 }
 
@@ -140,7 +128,26 @@ validate_memlocation(){ # takes array e.g [4(, $t0, )]
 
 }
 
+if [ -z "${instruction_file}" ]; then # check instruction file
+  echo "Input file not specified"
+  echo "Usage: ./valsplit.sh input.txt correct.txt (optional) incorrect.txt (optional)"
+  exit -1
+fi
+
+if [[ -z "${output_file}" ]]; then # check output file
+  echo "No output file specified will use existing correct.txt or make new file"
+  printf "" >> correct.txt # redirect nothing to file creates if not existing
+  output_file="correct.txt"
+fi
+
+if [[ -z "${error_file}" ]]; then # check error file
+  echo "No error file specified will use existing incorrect.txt or make new file"
+  printf "" >> incorrect.txt # redirect nothing to file creates if not existing
+  error_file="incorrect.txt"
+fi
+
 line_count=0
+
 while IFS= read line
 do
 
@@ -150,9 +157,9 @@ do
 
   if [ ! -z "$ret" ]; then
     echo "$ret" # print excpetion message to terminal
-    write_to_error_file "$line" # write err instruction to error file
+    echo "$line" >> "${error_file}" # append err instruction to error file
   else
-    write_to_output_file "$line" # write valid instruction to output file
+    echo "$line" >>  "${output_file}" # append valid instruction to output file
   fi
 
   line_count=$((line_count + 1)) # increment line cout
