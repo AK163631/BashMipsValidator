@@ -15,6 +15,10 @@
 # functions return nothing if the are successfull otherwise the return an error string
 # erronous instructions will be written to error file only in the validation loop same with vaild instructions
 # printing of error messages to stdout/terminal is done only in validatin loop
+#
+#      ----- TODO -----
+# cleanup code
+# cleanup name space (use local where possible)
 
 
 ADD="add"
@@ -157,11 +161,11 @@ do
 
   if [ ! -z "$ret" ]; then
     echo "$ret" # print excpetion message to terminal
-    echo "$line" >> "${error_file}" # append err instruction to error file
+    echo "$line" >> "${error_file}" # append erronous instruction to error file
   else
     echo "$line" >>  "${output_file}" # append valid instruction to output file
   fi
 
-  line_count=$((line_count + 1)) # increment line cout
+  line_count=$((line_count + 1)) # increment line count
 
 done <"$instruction_file"
