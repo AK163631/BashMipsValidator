@@ -36,37 +36,75 @@ write_to_error_file(){
 
 validate_instruction(){
   instruction=("$@") # array of instructions elements
+  ops=("${instruction[@]:1}") # oprand sublist
 
   # checks if operation is add or sub
   if [ "${instruction[0]}" == "$ADD" ] || [ "${instruction[0]}" == "$SUB" ]; then
-    ops=("${instruction[@]:1}") # oprand sublist
 
-    # checks if it has 3 oprands
-    if [ "${#ops[@]}" == 3 ]; then
-      for i in "${ops[@]}"
+    if [ "${#ops[@]}" == 3 ]; then # checks if it has 3 oprands
+      for i in "${ops[@]}" # loops through oprands
       do
-        # check each register is valid 0 if invalid
-        func_result=$(validate_register "$i")
-        if [ "$func_result" == "0" ]; then
-          :
-        else
-          # write instion line to error file
-          write_to_error_file "$line"
+        func_result=$(validate_register "$i") # check each register is valid
 
-          # print error message
-          echo "$func_result"
-
-          # return as no need to check rest
-          return 1
+        if [ "$func_result" != "0" ]; then
+          write_to_error_file "$line" # write instruction line to error file
+          echo "$func_result" # prints error message
+          return 1 # return as no need to check rest
         fi
-      done
-    else
-      # write instion line to error file
-      write_to_error_file "$line"
 
-      # print error message
-      echo "Not enough oparands look for 3"
+      done
+    else # oprands != 3
+      write_to_error_file "$line" # write instion line to error file
+      echo "Not enough oparands look for 3" # print error message
     fi
+
+# checks if operation is sw or lw
+  elif [ "${instruction[0]}" == "$SW" ] || [ "${instruction[0]}" == "$LW" ]; then
+
+      if [ "${#ops[@]}" == 4 ]; then   # checks if it has 4 oprands e.g [$s0, 4(, $t0, )]
+
+        func1_result=$(validate_register "${ops[0]}") # checks if first oprand is a valid register
+        func_result=$(validate_memlocation "${ops[@]:1}") # checks if second oprand is a valid memlocation
+
+        if [ "$func1_result" != "0" ]; then
+          write_to_error_file "$line" # write instruction line to error file
+          echo "$func1_result" # prints error message
+          return 1 # return as no need to check rest
+
+        elif [ "$func2_result" != "0" ]; then
+          write_to_error_file "$line" # write instruction line to error file
+          echo "$func2_result" # prints error message
+          return 1 # return as no need to check rest
+        fi
+
+      else # oprands != 2
+        write_to_error_file "$line" # write instruction line to error file
+        echo "Not enough oparands look for 2" # print error message
+      fi
+
+  elif [ "${instruction[0]}" == "$ADDI" ]; then
+      if [ "${#ops[@]}" == 3 ]; then # checks if it has 2 oprands
+        func1_result=$(validate_register "${ops[0]}") # checks if first oprand is a valid register
+        func2_result=$(validate_register "${ops[1]}") # checks if second oprand is a valid register
+        func3_result=$(validate_imediate "${ops[2]}") # checks if third oprand is a valid immediate
+        if [ "$func1_result" != "0" ]; then
+          write_to_error_file "$line" # write instruction line to error file
+          echo "$func1_result" # prints error message
+          return 1 # return as no need to check rest
+        elif [ "$func2_result" != "0" ]; then
+          write_to_error_file "$line" # write instruction line to error file
+          echo "$func1_result" # prints error message
+          return 1 # return as no need to check rest
+        elif [ "$func2_result" != "0" ]; then
+          write_to_error_file "$line" # write instruction line to error file
+          echo "$func1_result" # prints error message
+          return 1 # return as no need to check rest
+        fi
+      fi
+  else # opration not recognised
+    write_to_error_file "$line" # write instruction line to error file
+    echo "Invalid operation" # print error message
+    return 1
   fi
   # all correct
   return 0
