@@ -12,9 +12,9 @@
 # The second parameter for lw and sw instructions contains both an immediate and a register e.g8( $t2 )
 #
 #      ---- implementation details ---
-# functions return "0" if the are successfull otherwise the return an error message
-# erronous instructions will be written to error file in write_to_error_file called in validate_instruction only
-# printing of error messages to stdout/terminal is done in validate_instruction
+# functions return nothing if the are successfull otherwise the return an error string
+# erronous instructions will be written to error file only in the validation loop same with vaild instructions
+# printing of error messages to stdout/terminal is done only in validatin loop
 
 ADD="add"
 SUB="sub"
@@ -44,131 +44,115 @@ validate_instruction(){
     if [ "${#ops[@]}" == 3 ]; then # checks if it has 3 oprands
       for i in "${ops[@]}" # loops through oprands
       do
-        func_result=$(validate_register "$i") # check each register is valid
 
-        if [ "$func_result" != "0" ]; then
-          write_to_error_file "$line" # write instruction line to error file
-          echo "$func_result" # prints error message
-          return # return as no need to check rest
-        fi
+        echo $(validate_register "$i") # check each register is valid
 
       done
     else # oprands != 3
-      write_to_error_file "$line" # write instion line to error file
       echo "Not enough oparands looking for 3" # print error message
+      return # script breaking error if left
     fi
 
-# checks if operation is sw or lw
-  elif [ "${instruction[0]}" == "$SW" ] || [ "${instruction[0]}" == "$LW" ]; then
 
-      if [ "${#ops[@]}" == 4 ]; then   # checks if it has 4 oprands e.g [$s0, 4(, $t0, )]
+  elif [ "${instruction[0]}" == "$SW" ] || [ "${instruction[0]}" == "$LW" ]; then # checks if operation is sw or lw
+      size="${#ops[@]}"
+      if [ "$size" == 4 ]; then   # checks if it has 4 oprands e.g [$s0, 4(, $t0, )]
 
-        func1_result=$(validate_register "${ops[0]}") # checks if first oprand is a valid register
-        func_result=$(validate_memlocation "${ops[@]:1}") # checks if second oprand is a valid memlocation
-
-        if [ "$func1_result" != "0" ]; then
-          write_to_error_file "$line" # write instruction line to error file
-          echo "$func1_result" # prints error message
-          return # return as no need to check rest
-
-        elif [ "$func2_result" != "0" ]; then
-          write_to_error_file "$line" # write instruction line to error file
-          echo "$func2_result" # prints error message
-          return # return as no need to check rest
-        fi
+        echo $(validate_register "${ops[0]}") # checks if first oprand is a valid register
+        echo $(validate_memlocation "${ops[@]:1}") # checks if second oprand is a valid memlocation
 
       else # oprands != 2
-        write_to_error_file "$line" # write instruction line to error file
         echo "Not enough oparands looking for 2" # print error message
+        return # script breaking
       fi
 
-  elif [ "${instruction[0]}" == "$ADDI" ]; then
+  elif [ "${instruction[0]}" == "$ADDI" ]; then # checks if operation is addi
+
       if [ "${#ops[@]}" == 3 ]; then # checks if it has 2 oprands
-        func1_result=$(validate_register "${ops[0]}") # checks if first oprand is a valid register
-        func2_result=$(validate_register "${ops[1]}") # checks if second oprand is a valid register
-        func3_result=$(validate_imediate "${ops[2]}") # checks if third oprand is a valid immediate
 
-        if [ "$func1_result" != "0" ]; then
-          write_to_error_file "$line" # write instruction line to error file
-          echo "$func1_result" # prints error message
-          return # return as no need to check rest
-        elif [ "$func2_result" != "0" ]; then
-          write_to_error_file "$line" # write instruction line to error file
-          echo "$func2_result" # prints error message
-          return # return as no need to check rest
-        elif [ "$func3_result" != "0" ]; then
-          write_to_error_file "$line" # write instruction line to error file
-          echo "$func3_result" # prints error message
-          return # return as no need to check rest
-        fi
+        echo $(validate_register "${ops[0]}") # checks if first oprand is a valid register
+        echo $(validate_register "${ops[1]}") # checks if second oprand is a valid register
+        echo $(validate_imediate "${ops[2]}") # checks if third oprand is a valid immediate
       fi
-  else # opration not recognised
-    write_to_error_file "$line" # write instruction line to error file
+
+  else # operation not recognised
+
     echo "Invalid operation ${instruction[0]} in $line on line $line_count" # print error message
     return
   fi
-  # all correct
-  echo 0
 }
 
 validate_register(){
-  reg="$1"
-  if [ "${#reg}" -lt 3 ]; then # checks if register is correct length >3
+  local reg="$1"
+
+  if [ "${#reg}" -lt 3 ]; then # checks if register is correct length > 3
     echo "Unexpected size expected (size > 3) got ${#reg} in $reg in $line on line $line_count"
-    return
+    return # script breaking error must return
   fi
 
   if [ "${reg:0:1}" != \$ ]; then # checks for $ at start of register
     echo "Token not found \$ in $reg in $line on line $line_count"
-    return
+    # return
   fi
 
-  name="${reg:1:1}"
+  local name="${reg:1:1}"
   if [ "$name" == t ]; then
 
     if [ "${reg:2}" -gt 9 ] || [ "${reg:2}" -lt 0 ]; then
       echo "Invalid temp register range, expected between 0,9 got ${reg:2} in $reg in $line on line $line_count"
-      return
+      # return
     fi
 
   elif [ "$name" == s ]; then
 
     if [ "${reg:2}" -gt 7 ] || [ "${reg:2}" -lt 0 ]; then
       echo "Invalid register range, expected between 0,7 got ${reg:2} in $reg in $line on line $line_count"
-      return
+      # return
     fi
 
   else
     echo "Invalid register name, expected t or s got $name in $reg in $line on line $line_count"
-    return
+    # return
   fi
-
- echo 0 # every thing is valid
 }
 
 validate_imediate(){ # takes one value
-  value="$1"
-  if [ "$value" -gt 65535 ] || [ "$value" -lt 0 ]; then
-    echo "Invalid immediate range, expected between 0,65535 got $value in $line on line $line_count"
-    return
+  local value="$1"
+  if [ "$value" -gt 32767 ] || [ "$value" -lt -32768 ]; then
+    echo "Invalid immediate range, expected between -32768,32767 got $value in $line on line $line_count"
+    # return
   fi
-  echo 0
 }
 
-validate_memlocation(){ # takes array e.g [$s0, 4(, $t0, )]
-  :
+validate_memlocation(){ # takes array e.g [4(, $t0, )]
+  local parts=("$@") # array of elements
+
+  if [ "${#parts[@]}" != 3 ] ; then
+    echo "Invalid memory location format $parts in $line on line $line_count"
+    return # script breaking
+  fi
+
+  local imediate_size="${#parts[0]}"
+  local end=$((imediate_size - 1))
+
+  echo $(validate_imediate "${parts[0]:0:$end}") # check if memory offset is valid
+  echo $(validate_register "${parts[1]}") #  checks in register is valid
+
 }
 
 line_count=0
 while IFS= read line
 do
-  # split line by space
-  IFS=' ' read -r -a array <<< "$line"
 
-  # validate each instruction
-  ret=$(validate_instruction "${array[@]}")
-  if [ "$ret" != "0" ]; then
-    echo "$ret" # print errro message to terminal
+  IFS=' ' read -r -a array <<< "$line" # split line by space
+
+  ret=$(validate_instruction "${array[@]}") # validate each instruction
+
+  if [ ! -z "$ret" ]; then
+    echo "$ret" # print excpetion message to terminal
+    write_to_error_file "$line" # write err instruction to error file
+  else
+    write_to_output_file "$line" # write valid instruction to output file
   fi
 
   line_count=$((line_count + 1)) # increment line cout
