@@ -3,3 +3,13 @@ sub $s2 $t0 $t3
 lw $t1 8( $t2 )
 addi $t3 $s0 -9
 sw $s3 4( $t0 )
+add $s0 $s1 $s2
+sub $s2 $t0 $t3
+lw $t1 8( $t2 )
+addi $t3 $s0 -9
+sw $s3 4( $t0 )
+add $s0 $s1 $s2
+sub $s2 $t0 $t3
+lw $t1 8( $t2 )
+addi $t3 $s0 -9
+sw $s3 4( $t0 )
